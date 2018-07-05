@@ -12,7 +12,10 @@ except:
     from tkinter.ttk import Combobox,style
 import logging,json,re,os,threading,Queue,sys,time
 from datetime import datetime,timedelta
-from playsound import playsound   # pip install playsound
+try:
+    from playsound import playsound   # pip install playsound
+except:
+    playsound = None
 from multiprocessing import Process
 
 class countdown_timer():
