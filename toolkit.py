@@ -10,8 +10,95 @@ except:
     from tkinter import *
     from tkinter.filedialog import askopenfilename,askdirectory
     from tkinter.ttk import Combobox,style
-import logging,json,re,os
+import logging,json,re,os,threading,Queue,sys,time
 from datetime import datetime,timedelta
+from playsound import playsound   # pip install playsound
+from multiprocessing import Process
+
+class countdown_timer():
+    pid = None
+    def __init__(self, duration):
+        self.loop_id = -1
+        self.action_list = ['U', 'D']
+        self.duration = duration
+        self.root = Toplevel()
+        self.root.title('Timer')
+        self.root.attributes('-toolwindow', 1)
+        self.root.wm_attributes("-topmost", 1)
+        self.root.overrideredirect(True)
+        self.root.resizable(width=False, height=False)
+        self.root.configure(background='#000')
+        self.create_label_countdown()
+        self.set_label_window()
+        self.root.protocol('WM_DELETE_WINDOW', self.exit_now)
+        self.restart_countdown()
+
+    def play_sound(self):
+        #os.system("start C:/Windows/Media/town.mid")
+        #playsound('C:/Windows/Media/town.mid', False)
+        if self.pid:
+            self.pid.terminate()
+        self.pid = Process(target=playsound, args=('C:/Windows/Media/town.mid',))
+        self.pid.start()
+        #self.pid.join()
+
+    def set_label_window(self):
+        width = 130
+        height = 30
+        from_top = 0
+        self.root.geometry('%dx%d+%s+%s' %(width,height,self.root.winfo_screenwidth()-width-100,from_top))  # <width>x<height>
+        self.label_countdown.configure(background='#000')
+
+    def exit_now(self,):
+        if self.pid:
+            self.pid.terminate()
+        self.root.destroy()
+
+    def create_label_countdown(self):
+        self.label_countdown = Label(self.root, text='-0_%02d:%02d' %(self.duration/60,self.duration%60),font = ('consolas bold',20),bg='#000',fg = '#fff')
+        self.label_countdown.pack(fill=BOTH)
+        self.label_countdown.bind('<Button-1>', lambda event:self.restart_countdown())
+        self.label_countdown.bind('<Button-3>', lambda event:self.exit_now())
+        self.queue_label_countdown = Queue.Queue()
+
+    def restart_countdown(self):
+        if self.pid:
+            self.pid.terminate()
+        self.queue_label_countdown.put(1)
+        time.sleep(0.2)
+        with self.queue_label_countdown.mutex:
+            self.queue_label_countdown.queue.clear()
+        self.loop_id = (self.loop_id + 1)%10
+        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,self.duration/60,self.duration%60))
+        self.root.attributes('-alpha', 0.5)
+        self.countdown()
+
+    def countdown(self,):
+        def count_blink():
+            for iii in range(self.duration-1,-1,-1):
+                try:
+                    self.queue_label_countdown.get(True, timeout=1)
+                    return
+                except:
+                    self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
+
+            self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
+            self.root.attributes('-alpha', 1)
+            self.play_sound()
+            bg_colors = ['#f00','#000']
+            for iii in range(600):
+                try:
+                    self.queue_label_countdown.get(True, timeout=0.3)
+                    break
+                except:
+                    self.label_countdown.configure(background=bg_colors[iii%2])
+            self.set_label_window()
+
+        #print '------countdown------'
+        self.set_label_window()
+        thr = threading.Thread(target=count_blink, args=())
+        thr.setDaemon(True)
+        thr.start()
 
 class popup_option_menu(Toplevel):
     chosen_file = None
@@ -125,27 +212,38 @@ class window_main(Tk):
         self.resizable(width=False, height=False)
 
         width=10
-        font=("consolas", 11, 'bold')
+        font=("", 10, 'bold')
         btn_bg = '#ffe'
         btn_fg = '#00f'
-        self.button_add =  Button(self,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD",
+
+        frame_title = Frame(self, )
+        frame_title.grid(row=0)
+        self.button_add =  Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD",
             command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
-        self.button_remove_item = Button(self, font=font, width=width, bg=btn_bg, fg=btn_fg, text="REMOVE",
+        self.button_remove_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="REMOVE",
             command=self.show_btn_remove)
-        self.button_help = Button(self,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP",
+        self.button_help = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP",
             command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
 
+        self.var_entry_timer = IntVar()
+        self.var_entry_timer.set(2400)
+        self.button_countdown = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="CountDown",
+            command=lambda :countdown_timer(self.var_entry_timer.get()) )
+        entry_timer = Entry(frame_title, textvariable=self.var_entry_timer, width=width)
+
         row_id = 0
-        self.button_add.grid   (row=row_id, column=0)
+        self.button_add.grid   (row=row_id, column=0,)
         self.button_remove_item.grid      (row=row_id, column=1)
-        self.button_help.grid      (row=row_id, column=2)
+        self.button_help.grid      (row=row_id, column=2,)
+        self.button_countdown.grid      (row=row_id, column=3,)
+        entry_timer.grid      (row=row_id, column=4,)
 
         frame_table = Frame(self, )
         #frame_scrollbar = Scrollbar(frame_table, orient=VERTICAL)
         #frame_scrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
         self.frame_list = Frame(frame_table, bg="#fa3")
         self.frame_list.pack(fill=BOTH)
-        frame_table.grid(row=1, columnspan=5)
+        frame_table.grid(row=1)
         self.update_list_frame_view()
 
         self.frame_tips = Toplevel(self,bd=1,bg="black")
@@ -244,7 +342,7 @@ class window_main(Tk):
         # on win32, CMD "start" will keep new process async with GUI.
         cmd_str = 'start "%s" /D "%s"' %(item_alias, item_dict['folder'])
 
-        if is_debug or item_dict['interpreter']:
+        if is_debug or item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe'):
             cmd_str = '%s cmd /K' %cmd_str
         else:
             cmd_str = '%s /B' %cmd_str
@@ -264,7 +362,7 @@ class window_main(Tk):
         cmd_str = '%s %s' %(cmd_str,arg_content)
         logging.info(cmd_str)
 
-        if item_dict['interpreter'] and (not is_debug):
+        if (item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe')) and (not is_debug):
             os.system('%s ^&^& exit' %cmd_str)
         else:
             os.system(cmd_str)
