@@ -14,7 +14,7 @@ Examples:
    - shutdown windows:
      shutdown /p
    - Hibernate
-     shutdown /h
+     shutdown /h ^& exit
    - run cmd in specific path
      E: & cd  "Z:/github/pyToolkit"
 
