@@ -83,7 +83,10 @@ class countdown_timer():
                     self.queue_label_countdown.get(True, timeout=1)
                     return
                 except:
-                    self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
+                    try:
+                        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
+                    except:
+                        pass
 
             self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
             self.root.attributes('-alpha', 1)
@@ -232,7 +235,7 @@ class window_main(Tk):
         self.var_entry_timer = IntVar()
         self.var_entry_timer.set(2400)
         self.button_countdown = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="CountDown",
-            command=lambda :countdown_timer(self.var_entry_timer.get()) )
+            command=self.cmd_btn_countdown)
         entry_timer = Entry(frame_title, textvariable=self.var_entry_timer, width=width)
 
         row_id = 0
@@ -265,6 +268,14 @@ class window_main(Tk):
   REMOVE button: enable "-" button to remove shortcut'''
         self.button_help.bind("<Enter>", lambda event:self.show_tips(help_info,self.button_help))
         self.button_help.bind("<Leave>", lambda event:self.frame_tips.withdraw())
+
+    def cmd_btn_countdown(self,):
+        try:
+            if Toplevel.winfo_exists(self.countdown.root):
+                return
+        except:
+            pass
+        self.countdown = countdown_timer(self.var_entry_timer.get())
 
     def show_tips(self, info_text, anchor):
         self.frame_tips.geometry('+%d+%d' %(anchor.winfo_rootx(),(anchor.winfo_rooty()+20)))
