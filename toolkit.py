@@ -487,6 +487,8 @@ class window_main(Tk):
             btn_dir = Button(self.frame_list, bg=color_code, fg=foreground, text="D", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_folder(item_alias))
             btn_dir.grid(row=iii, column=99)
+        self.update()
+        self.geometry("+0+%d" %(self.winfo_screenheight()-self.winfo_height()-66))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, datefmt='%m%d %H:%M:%S', format='%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(funcName)s: %(message)s')
