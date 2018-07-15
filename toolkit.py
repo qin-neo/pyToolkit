@@ -259,13 +259,16 @@ class window_main(Tk):
         self.frame_tips.transient()
         self.label_tips=Label(self.frame_tips,bg="yellow",justify='left')
         self.label_tips.pack()
-        help_info = ''' Windows ToolKit, shortcuts with parameters.
+        help_info = '''  Windows ToolKit, shortcuts with parameters.
     Author: qinhuawei@outlook.com 2018-07-04
   Left-Click on Alias button: execute shortcut
   Right-Click on Alias button: open main folder
-  Right-Click in text-entry: copy select text
-  Mid-Click in text-entry: clean text-entry
-  REMOVE button: enable "-" button to remove shortcut'''
+  Right-Click in text-entry: clean text-entry
+  Mid-Click in text-entry: remove chosen line from history
+  REMOVE button: enable "-" button to remove shortcut
+  CountDown button: start a countdown timer on right corner of screen
+    Left-Click on timer: reset timer
+    Right-Click on timer: exit timer'''
         self.button_help.bind("<Enter>", lambda event:self.show_tips(help_info,self.button_help))
         self.button_help.bind("<Leave>", lambda event:self.frame_tips.withdraw())
 
@@ -291,14 +294,6 @@ class window_main(Tk):
             self.remove_enabled = True
             for item_alias in self.json_data.keys():
                 self.dict_btn_remove[item_alias].config(state=NORMAL,text="-",width=2)
-
-    def right_click_copy(self,item_alias,  event):
-        self.frame_tips.withdraw()
-        event.widget.event_generate('<Control-c>')
-        self.frame_tips.geometry('+%d+%d' %(self.dict_cbbox[item_alias].winfo_rootx(),(self.dict_cbbox[item_alias].winfo_rooty()+20)))
-        self.frame_tips.deiconify()
-        self.label_tips.config(text='copied.')
-        self.frame_tips.after(500, self.frame_tips.withdraw)
 
     def init_item_context(self,item_alias, main_file, main_folder, interpreter):
         if not main_folder:
@@ -461,17 +456,14 @@ class window_main(Tk):
             self.dict_cbbox[item_alias] = text_cbbox
 
             if self.json_data[item_alias]:
-                text_cbbox['values'] = ['',]+self.json_data[item_alias]['list']
-                text_cbbox.current(1)
-            else:
-                text_cbbox.set('')
                 text_cbbox['values'] = self.json_data[item_alias]['list']
+                text_cbbox.current(0)
 
             text_cbbox.grid(row=iii, column=2)
             text_cbbox.bind('<Button-2>',
                 lambda event, item_alias=item_alias: self.botton2_on_dict_cbbox(item_alias))
             text_cbbox.bind('<Button-3>',
-                lambda event,item_alias=item_alias: self.right_click_copy(item_alias,event))
+                lambda event,item_alias=item_alias: self.dict_cbbox[item_alias].set(''))
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
 
