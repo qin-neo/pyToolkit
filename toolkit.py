@@ -257,18 +257,18 @@ class window_main(Tk):
         self.frame_tips.withdraw()
         self.frame_tips.overrideredirect(1)
         self.frame_tips.transient()
-        self.label_tips=Label(self.frame_tips,bg="yellow",justify='left')
+        self.label_tips=Label(self.frame_tips,bg="grey",justify='left')
         self.label_tips.pack()
         help_info = '''  Windows ToolKit, shortcuts with parameters.
-    Author: qinhuawei@outlook.com 2018-07-04
-  Left-Click on Alias button: execute shortcut
-  Right-Click on Alias button: open main folder
-  Right-Click in text-entry: clean text-entry
-  Mid-Click in text-entry: remove chosen line from history
-  REMOVE button: enable "-" button to remove shortcut
-  CountDown button: start a countdown timer on right corner of screen
-    Left-Click on timer: reset timer
-    Right-Click on timer: exit timer'''
+    Author: qinhuawei@outlook.com 2018-07-15.
+  Left-Click on Alias button: execute shortcut.
+  Right-Click on Alias button: open main folder.
+  Right-Click in text-entry: clean text-entry, and trigger dropdown.
+  Mid-Click in text-entry: remove chosen line from history.
+  REMOVE button: enable "-" button to remove shortcut.
+  CountDown button: start a timer on upper right corner of screen.
+    Left-Click on timer: reset timer.
+    Right-Click on timer: exit timer.'''
         self.button_help.bind("<Enter>", lambda event:self.show_tips(help_info,self.button_help))
         self.button_help.bind("<Leave>", lambda event:self.frame_tips.withdraw())
 
@@ -407,6 +407,10 @@ class window_main(Tk):
             pass
         self.dict_cbbox[item_alias].set('')
 
+    def botton3_on_dict_cbbox(self, item_alias):
+        self.dict_cbbox[item_alias].set('')
+        self.dict_cbbox[item_alias].event_generate('<Down>')
+
     def update_list_frame_view(self):
         self.frame_list.grid_forget()
         for widget in self.frame_list.winfo_children():
@@ -463,9 +467,11 @@ class window_main(Tk):
             text_cbbox.bind('<Button-2>',
                 lambda event, item_alias=item_alias: self.botton2_on_dict_cbbox(item_alias))
             text_cbbox.bind('<Button-3>',
-                lambda event,item_alias=item_alias: self.dict_cbbox[item_alias].set(''))
+                lambda event,item_alias=item_alias: self.botton3_on_dict_cbbox(item_alias))
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
+
+            text_cbbox.bind("<Enter>", lambda event:event.widget.focus_set())
 
             btn_remove = Button(self.frame_list, bg=color_code, fg=foreground, state=DISABLED, text="", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
