@@ -89,12 +89,14 @@ class countdown_timer():
             self.root.attributes('-alpha', 1)
             self.play_sound()
             bg_colors = ['#f00','#000']
-            for iii in range(600):
+            for iii in range(3600):
                 try:
-                    self.queue_label_countdown.get(True, timeout=0.3)
+                    self.queue_label_countdown.get(True, timeout=0.5)
                     break
                 except:
-                    self.label_countdown.configure(background=bg_colors[iii%2])
+                    tmp=iii/2
+                    self.label_countdown.configure(background=bg_colors[iii%2],
+                        text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60))
             self.set_label_window()
 
         #print '------countdown------'
@@ -213,7 +215,6 @@ class window_main(Tk):
         self.wm_iconbitmap( '@icon.xbm')
         self.configure(background='#eef')
         self.resizable(width=False, height=False)
-
         width=10
         font=("", 10, 'bold')
         btn_bg = '#ffe'
@@ -309,15 +310,16 @@ class window_main(Tk):
         self.json_data['explorer']['list'] = ['https://github.com/qin-neo/pyToolkit',]
 
     def load_cfg_file(self):
-        for iii in range(7):
+        for iii in range(30):
             file_name = (datetime.now() - timedelta(days=iii)).strftime('cfg_%Y%m%d.json')
-            try:
-                data_file = open(file_name, 'rb')
-                self.json_data = json.load(data_file, encoding="utf-8")
-                data_file.close()
-                return
-            except:
-                logging.exception('--------- %s ----------' %file_name)
+            if os.path.isfile(file_name):
+                try:
+                    data_file = open(file_name, 'rb')
+                    self.json_data = json.load(data_file, encoding="utf-8")
+                    data_file.close()
+                    return
+                except:
+                    logging.exception('--------- %s ----------' %file_name)
         logging.exception('json load configuration.json failed.')
         self.load_default_cfg()
 
@@ -444,13 +446,15 @@ class window_main(Tk):
             self.dict_str_var[item_alias] = StringVar()
             text_cbbox = Combobox(self.frame_list, textvariable=self.dict_str_var[item_alias],
                 font=("Arial",8), width=cbbox_width, height=20, style=style_name)
+
             self.dict_cbbox[item_alias] = text_cbbox
-            text_cbbox['values'] = self.json_data[item_alias]['list']
-            text_cbbox.set('')
+
             if self.json_data[item_alias]:
-                text_cbbox.current(0)
+                text_cbbox['values'] = ['',]+self.json_data[item_alias]['list']
+                text_cbbox.current(1)
             else:
                 text_cbbox.set('')
+                text_cbbox['values'] = self.json_data[item_alias]['list']
 
             text_cbbox.grid(row=iii, column=2)
             text_cbbox.bind('<Button-2>',
