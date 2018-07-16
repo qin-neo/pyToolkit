@@ -1,11 +1,15 @@
 # pyToolkit
 Windows shortcut with parameters
 
-  Left-Click on Alias button: execute shortcut<br/>
-  Right-Click on Alias button: open main folder<br/>
-  Right-Click in text-entry: copy select text<br/>
-  Mid-Click in text-entry: clean text-entry<br/>
-  REMOVE button: enable "-" button to remove shortcut<br/>
+  Left-Click on Alias button: execute shortcut.<br>
+  Right-Click on Alias button: open main folder.<br>
+  Right-Click in text-entry: clean text-entry, and trigger dropdown.<br>
+  Mid-Click in text-entry: remove chosen line from history.<br>
+  Double-Click in text-entry: select all and copy.<br>
+  REMOVE button: enable "-" button to remove shortcut.<br>
+  CountDown button: start a timer on upper right corner of screen.<br>
+    Left-Click on timer: reset timer.<br>
+    Right-Click on timer: exit timer.<br>
 
 ![alt text](https://github.com/qin-neo/pyToolkit/blob/master/example.PNG)
 

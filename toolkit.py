@@ -265,6 +265,7 @@ class window_main(Tk):
   Right-Click on Alias button: open main folder.
   Right-Click in text-entry: clean text-entry, and trigger dropdown.
   Mid-Click in text-entry: remove chosen line from history.
+  Double-Click in text-entry: select all and copy.
   REMOVE button: enable "-" button to remove shortcut.
   CountDown button: start a timer on upper right corner of screen.
     Left-Click on timer: reset timer.
@@ -411,6 +412,15 @@ class window_main(Tk):
         self.dict_cbbox[item_alias].set('')
         self.dict_cbbox[item_alias].event_generate('<Down>')
 
+    def select_all_and_copy(self,item_alias, event):
+        self.frame_tips.withdraw()
+        event.widget.select_range(0, END)
+        event.widget.event_generate('<Control-c>')
+        self.frame_tips.geometry('+%d+%d' %(self.dict_cbbox[item_alias].winfo_rootx(),(self.dict_cbbox[item_alias].winfo_rooty()+20)))
+        self.frame_tips.deiconify()
+        self.label_tips.config(text='copied.')
+        self.frame_tips.after(500, self.frame_tips.withdraw)
+
     def update_list_frame_view(self):
         self.frame_list.grid_forget()
         for widget in self.frame_list.winfo_children():
@@ -472,6 +482,7 @@ class window_main(Tk):
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
 
             text_cbbox.bind("<Enter>", lambda event:event.widget.focus_set())
+            text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
             btn_remove = Button(self.frame_list, bg=color_code, fg=foreground, state=DISABLED, text="", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
