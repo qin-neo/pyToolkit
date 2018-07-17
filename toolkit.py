@@ -409,6 +409,7 @@ class window_main(Tk):
         self.dict_cbbox[item_alias].set('')
 
     def botton3_on_dict_cbbox(self, item_alias):
+        self.dict_cbbox[item_alias].focus_set()
         self.dict_cbbox[item_alias].set('')
         self.dict_cbbox[item_alias].event_generate('<Down>')
 
@@ -481,7 +482,6 @@ class window_main(Tk):
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
 
-            text_cbbox.bind("<Enter>", lambda event:event.widget.focus_set())
             text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
             btn_remove = Button(self.frame_list, bg=color_code, fg=foreground, state=DISABLED, text="", font=font,
