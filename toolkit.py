@@ -78,29 +78,28 @@ class countdown_timer():
 
     def countdown(self,):
         def count_blink():
-            for iii in range(self.duration-1,-1,-1):
-                try:
-                    self.queue_label_countdown.get(True, timeout=1)
-                    return
-                except:
+            try:
+                for iii in range(self.duration-1,-1,-1):
                     try:
-                        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
+                        self.queue_label_countdown.get(True, timeout=1)
+                        return
                     except:
-                        pass
+                        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
 
-            self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
-            self.root.attributes('-alpha', 1)
-            self.play_sound()
-            bg_colors = ['#f00','#000']
-            for iii in range(3600):
-                try:
-                    self.queue_label_countdown.get(True, timeout=0.5)
-                    break
-                except:
-                    tmp=iii/2
-                    self.label_countdown.configure(background=bg_colors[iii%2],
-                        text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60))
-            self.set_label_window()
+                self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
+                self.root.attributes('-alpha', 1)
+                self.play_sound()
+                bg_colors = ['#f00','#000']
+                for iii in range(3600):
+                    try:
+                        self.queue_label_countdown.get(True, timeout=0.5)
+                        return
+                    except:
+                        tmp=iii/2
+                        self.label_countdown.configure(background=bg_colors[iii%2],
+                            text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60))
+            except:
+                pass
 
         #print '------countdown------'
         self.set_label_window()
