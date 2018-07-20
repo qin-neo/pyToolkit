@@ -10,7 +10,7 @@ except:
     from tkinter import *
     from tkinter.filedialog import askopenfilename,askdirectory
     from tkinter.ttk import Combobox,style
-import logging,json,re,os,threading,Queue,sys,time
+import logging,json,re,os
 from datetime import datetime,timedelta
 try:
     from playsound import playsound   # pip install playsound
@@ -20,6 +20,7 @@ from multiprocessing import Process
 
 class countdown_timer():
     pid = None
+    after = None
     def __init__(self, duration):
         self.loop_id = -1
         self.action_list = ['U', 'D']
@@ -51,6 +52,7 @@ class countdown_timer():
         from_top = 0
         self.root.geometry('%dx%d+%s+%s' %(width,height,self.root.winfo_screenwidth()-width-100,from_top))  # <width>x<height>
         self.label_countdown.configure(background='#000')
+        self.root.attributes('-alpha', 0.5)
 
     def exit_now(self,):
         if self.pid:
@@ -62,51 +64,32 @@ class countdown_timer():
         self.label_countdown.pack(fill=BOTH)
         self.label_countdown.bind('<Button-1>', lambda event:self.restart_countdown())
         self.label_countdown.bind('<Button-3>', lambda event:self.exit_now())
-        self.queue_label_countdown = Queue.Queue()
 
     def restart_countdown(self):
         if self.pid:
             self.pid.terminate()
-        self.queue_label_countdown.put(1)
-        time.sleep(0.2)
-        with self.queue_label_countdown.mutex:
-            self.queue_label_countdown.queue.clear()
+        if self.after:
+            self.root.after_cancel(self.after)
+        self.set_label_window()
         self.loop_id = (self.loop_id + 1)%10
         self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,self.duration/60,self.duration%60))
-        self.root.attributes('-alpha', 0.5)
+        self.clock = self.duration+1
         self.countdown()
 
     def countdown(self,):
-        def count_blink():
-            for iii in range(self.duration-1,-1,-1):
-                try:
-                    self.queue_label_countdown.get(True, timeout=1)
-                    return
-                except:
-                    try:
-                        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,iii/60,iii%60))
-                    except:
-                        pass
-
+        self.clock = self.clock - 1
+        if self.clock > 0:
+            self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,self.clock/60,self.clock%60))
+            self.after = self.root.after(1000, self.countdown)
+            return
+        if self.clock == 0:
             self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
             self.root.attributes('-alpha', 1)
             self.play_sound()
-            bg_colors = ['#f00','#000']
-            for iii in range(3600):
-                try:
-                    self.queue_label_countdown.get(True, timeout=0.5)
-                    break
-                except:
-                    tmp=iii/2
-                    self.label_countdown.configure(background=bg_colors[iii%2],
-                        text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60))
-            self.set_label_window()
-
-        #print '------countdown------'
-        self.set_label_window()
-        thr = threading.Thread(target=count_blink, args=())
-        thr.setDaemon(True)
-        thr.start()
+        tmp=-1*self.clock/2
+        bg_colors = ['#f00','#000']
+        self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60), background=bg_colors[self.clock%2])
+        self.after = self.root.after(500, self.countdown)
 
 class popup_option_menu(Toplevel):
     chosen_file = None
