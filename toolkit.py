@@ -23,12 +23,15 @@ class countdown_timer():
     after = None
     def __init__(self, duration):
         self.loop_id = -1
+        self.width = 100
+        self.height = 25
         self.action_list = ['U', 'D']
         self.duration = duration
         self.root = Toplevel()
         self.root.title('Timer')
         self.root.attributes('-toolwindow', 1)
-        self.root.wm_attributes("-topmost", 1)
+        #self.root.wm_attributes("-topmost", 1)
+        self.root.attributes('-topmost', 'true')
         self.root.overrideredirect(True)
         self.root.resizable(width=False, height=False)
         self.root.configure(background='#000')
@@ -47,12 +50,9 @@ class countdown_timer():
         #self.pid.join()
 
     def set_label_window(self):
-        width = 130
-        height = 30
-        from_top = 0
-        self.root.geometry('%dx%d+%s+%s' %(width,height,self.root.winfo_screenwidth()-width-100,from_top))  # <width>x<height>
+        self.root.geometry("%dx%d+%d+%d" %(self.width,self.height,self.root.winfo_screenwidth()-self.width,30)) #winfo_screenheight()
         self.label_countdown.configure(background='#000')
-        self.root.attributes('-alpha', 0.5)
+        self.root.attributes('-alpha', 0.3)
 
     def exit_now(self,):
         if self.pid:
@@ -60,7 +60,7 @@ class countdown_timer():
         self.root.destroy()
 
     def create_label_countdown(self):
-        self.label_countdown = Label(self.root, text='-0_%02d:%02d' %(self.duration/60,self.duration%60),font = ('consolas bold',20),bg='#000',fg = '#fff')
+        self.label_countdown = Label(self.root, text='-0_%02d:%02d' %(self.duration/60,self.duration%60),font = ('consolas bold',15),bg='#000',fg = '#fff')
         self.label_countdown.pack(fill=BOTH)
         self.label_countdown.bind('<Button-1>', lambda event:self.restart_countdown())
         self.label_countdown.bind('<Button-3>', lambda event:self.exit_now())
@@ -79,11 +79,13 @@ class countdown_timer():
     def countdown(self,):
         self.clock = self.clock - 1
         if self.clock > 0:
+            if self.clock % 60 == 0:
+                self.set_label_window()
             self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,self.clock/60,self.clock%60))
             self.after = self.root.after(1000, self.countdown)
             return
         if self.clock == 0:
-            self.root.geometry('%dx50+%s+%s' %(self.root.winfo_screenwidth(),0,0))
+            self.root.geometry('%dx%s+%s+%s' %(self.root.winfo_screenwidth(),self.height,0,self.root.winfo_screenheight()/2))
             self.root.attributes('-alpha', 1)
             self.play_sound()
         tmp=-1*self.clock/2
