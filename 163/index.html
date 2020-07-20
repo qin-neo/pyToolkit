@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LIST</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<META HTTP-EQUIV="EXPIRES" CONTENT="0">
+<link rel="stylesheet" href="neo_comm.css"/>
+<script type="text/javascript" src="163.js"></script>
+<script type="text/javascript" src="bk.js"></script>
+<script type="text/javascript" src="stock.js"></script>
+<script type="text/javascript">
+var today  = new Date().toLocaleDateString('sq-AL', {year: '2-digit', month: '2-digit', day: '2-digit' }).replace(/[^\w\-]/g, '');
+
+var stock_list=[],the_table;//Object.keys(json_dict);
+var timerHandler;
+window.onload = function () {
+    var sort_by_value = [];
+    for (var key in json_dict) {
+        var tmp = {};
+        tmp['value'] = json_dict[key]['bankuai']+key;
+        tmp['key']  = key;
+        sort_by_value.push(tmp);
+    }
+    sort_by_value.sort(function(a, b){
+        if (a.value > b.value) return -1;
+        if (a.value <= b.value) return 1;
+        return 0;
+    });
+    for (var iii=0;iii<sort_by_value.length;iii++) {
+        stock_list.push(sort_by_value[iii].key);
+    }
+  var url = '/collect.json';
+  the_table = document.getElementById("the_table");
+
+  function fill_the_table() {
+    //for (var iii=0; iii<stock_list.length;iii+=100) {
+    stock_info_from_163(url,the_table,stock_list, false);
+  }
+
+  fill_the_table();
+  timerHandler = setInterval(fill_the_table,10000);
+
+    window.onfocus = function () {
+        fill_the_table();
+        clearInterval(timerHandler);
+        timerHandler = setInterval(fill_the_table,10000);
+        console.log("window.onfocus");
+    };
+    window.onblur = function () {
+        clearInterval(timerHandler);
+        console.log("window.onblur");
+    };
+};
+
+</script>
+</head>
+<body>
+<div class="top-right" id="top_right">
+    <div><a href='https://qin-neo.github.io' target='_blank'>HOME</a></div>
+    <div><a href='http://gu.sina.cn/m/#/global/primary'>全球股指</a></div>
+    <div><a href='http://news.10jqka.com.cn/realtimenews.html' target='_blank'>同花顺24</a></div>
+    <div><a href='http://finance.sina.com.cn/roll/' target='_blank'>滚动新闻</a></div>
+    <div><a href='https://qin-neo.github.io/bk.html' target='_blank'>行业K线</a></div>
+</div>
+<table id="the_table"></table>
+</body>
+</html>

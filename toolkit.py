@@ -1,22 +1,112 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # qinhuawei@outlook.com
-try:
-    from Tkinter import *
-    from tkFileDialog import askopenfilename,askdirectory
-    from ttk import Combobox
-    import ttk
-except:
-    from tkinter import *
-    from tkinter.filedialog import askopenfilename,askdirectory
-    from tkinter.ttk import Combobox,style
-import logging,json,re,os
+
+from tkinter import *
+from tkinter.filedialog import askopenfilename,askdirectory
+from tkinter.ttk import Combobox
+import tkinter.ttk as ttk
+import urllib.request
+import logging,json,re,os,psutil,time,requests
 from datetime import datetime,timedelta
-try:
-    from playsound import playsound   # pip install playsound
-except:
-    playsound = None
-from multiprocessing import Process
+
+def get_163_stock_info(stock_list, proxyDict):
+    # http://api.money.126.net/data/feed/0000001,0601318,money.api?callback=_ntes_quote_callback4621339
+    the_url = 'https://api.money.126.net/data/feed/0000001,1399001,1399006'
+    for stock_id in stock_list:
+        if stock_id.startswith('sh'):
+            stock_id = f'0{stock_id[2:]}'
+        elif stock_id.startswith('sz'):
+            stock_id = f'1{stock_id[2:]}'
+        the_url = f'{the_url},{stock_id}'
+    the_url = f'{the_url},money.api?callback=_ntes_quote_callback{datetime.now().microsecond}'
+    #logging.debug(the_url)
+
+    r = requests.get(the_url,  proxies=proxyDict, verify=False, timeout=(2,3))
+    stocks_info = re.search(r'_ntes_quote_callback\d+\(([^\)]+)\)', r.text).group(1)
+    #logging.debug(r.text)
+    stocks_json = json.loads(stocks_info)
+    stock_str = ''
+    for stock_id, stock_dict in stocks_json.items():
+        stock_str = '%s%8.2f%6.2f%5s\n' %(stock_str, stock_dict['price'], 100.0*stock_dict['percent'], stock_dict['name'],)
+    return stock_str
+
+class show_stock_info():
+    stock_json = "stock.json"
+    prev_sent = 0
+    prev_recv = 0
+    ts = 0
+    stock_info = '\n\n\n\n\n\n'
+
+    def __init__(self, ):
+        self.read_stock_json()
+        self.root = Toplevel()
+        #self.root.attributes('-toolwindow', 1)
+        self.root.attributes('-topmost', 'true')
+        self.root.overrideredirect(True)
+        self.root.resizable(width=False, height=False)
+
+        self.label_info = Label(self.root, font = ('consolas',7),fg='#000',bg='white')
+        self.label_info.grid()
+        self.root.attributes('-alpha', 0.2)
+        self.root.wm_attributes("-transparentcolor", "white")
+        self.label_info.bind('<Button-1>', lambda event:os.startfile('file:///D:/dev/pyToolKit/qq/index.html'))
+        self.label_info.bind('<Button-3>', lambda event:self.root.destroy())
+        self.label_info.bind("<Enter>", lambda event:self.root.attributes('-alpha', 0.5))
+        self.label_info.bind("<Leave>", lambda event:self.root.attributes('-alpha', 0.1))
+
+        try:
+            self.show_stock()
+            self.root.geometry(f"+{self.root.winfo_screenwidth() - self.root.winfo_width()}+{self.root.winfo_screenheight() - self.root.winfo_height() - 76}")
+            self.root.update()
+            self.root.geometry(f"+{self.root.winfo_screenwidth() - self.root.winfo_width()}+{self.root.winfo_screenheight() - self.root.winfo_height() - 76}")
+            self.root.update()
+        except:
+            logging.exception('-------------------------------')
+            self.root.destroy()
+            os.startfile(self.stock_json)
+
+    def read_stock_json(self):
+        config = {
+            "proxy": "",    # http://127.0.0.1:1234
+            "stocks": ""    # sh601166,sh601818,sz002419,sh600016
+        }
+
+        if not os.path.isfile(self.stock_json):
+            with open(self.stock_json, 'w') as fd:
+                json.dump(config, fd)
+
+        with open(self.stock_json) as json_file:
+            config = json.load(json_file)
+        self.stock_list = re.findall(r'(\w+)', config["stocks"])
+        if config["proxy"]:
+            self.proxyDict = {
+                "http"  : config["proxy"],
+                "https" : config["proxy"],
+            }
+        else:
+            self.proxyDict = None
+
+    def show_stock(self):
+        ts = datetime.now()
+        try:
+            if self.stock_list and ts.weekday()<5 and ts.hour>8 and ts.hour<16:
+                self.stock_info = get_163_stock_info(self.stock_list, self.proxyDict)
+        except:
+            self.stock_info = 'BAD\n%s' %(self.stock_info)
+
+        ts = time.time()
+        net = psutil.net_io_counters()
+        bytes_recv = net.bytes_recv
+        bytes_sent = net.bytes_sent
+        factor = 1024*(ts - self.ts)
+        self.label_info.config(text='%5.1f%% %5.1f %5.1f ██\n%s' %(psutil.cpu_percent(), (bytes_sent-self.prev_sent)/factor, (bytes_recv-self.prev_recv)/factor, self.stock_info))
+        #self.root.geometry("+%d+%d" %(self.root.winfo_screenwidth()-115,self.root.winfo_screenheight()-120))
+        #self.root.geometry(f"+{self.root.winfo_screenwidth()-self.root.winfo_width()}+{self.root.winfo_screenheight()-self.root.winfo_height()-66}")
+        self.prev_recv = bytes_recv
+        self.prev_sent = bytes_sent
+        self.ts = ts
+        self.root.after(3000, self.show_stock)
 
 class countdown_timer():
     pid = None
@@ -25,6 +115,7 @@ class countdown_timer():
         self.loop_id = -1
         self.width = 100
         self.height = 25
+        self.on_top = 200
         self.action_list = ['U', 'D']
         self.duration = duration
         self.root = Toplevel()
@@ -40,19 +131,12 @@ class countdown_timer():
         self.root.protocol('WM_DELETE_WINDOW', self.exit_now)
         self.restart_countdown()
 
-    def play_sound(self):
-        #os.system("start C:/Windows/Media/town.mid")
-        #playsound('C:/Windows/Media/town.mid', False)
-        if self.pid:
-            self.pid.terminate()
-        self.pid = Process(target=playsound, args=('C:/Windows/Media/town.mid',))
-        self.pid.start()
-        #self.pid.join()
-
     def set_label_window(self):
-        self.root.geometry("%dx%d+%d+%d" %(self.width,self.height,self.root.winfo_screenwidth()-self.width,30)) #winfo_screenheight()
+        #self.root.geometry("%dx%d+%d+%d" %(self.width,self.height,self.root.winfo_screenwidth()-self.width, self.root.winfo_screenheight()-self.on_top)) #winfo_screenheight()
+        self.root.geometry("%dx%d+%d+%d" %(self.width,self.height,0, self.root.winfo_screenheight()-self.on_top)) #winfo_screenheight()
         self.label_countdown.configure(background='#000')
         self.root.attributes('-alpha', 0.3)
+        self.root.attributes('-topmost', 'true')
 
     def exit_now(self,):
         if self.pid:
@@ -79,15 +163,16 @@ class countdown_timer():
     def countdown(self,):
         self.clock = self.clock - 1
         if self.clock > 0:
-            if self.clock % 60 == 0:
+            if self.clock % 120 == 0:
                 self.set_label_window()
             self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,self.clock/60,self.clock%60))
             self.after = self.root.after(1000, self.countdown)
             return
-        if self.clock == 0:
-            self.root.geometry('%dx%s+%s+%s' %(self.root.winfo_screenwidth(),self.height,0,self.root.winfo_screenheight()/2))
+        if self.clock <= 0 and self.clock % 10 == 0:
+            self.root.geometry('%dx%d+%d+%d' %(self.root.winfo_screenwidth(),self.height,0,self.root.winfo_screenheight()/2))
             self.root.attributes('-alpha', 1)
-            self.play_sound()
+            self.root.attributes('-topmost', 'true')
+
         tmp=-1*self.clock/2
         bg_colors = ['#f00','#000']
         self.label_countdown.config(text='%s%d_%02d:%02d' %(self.action_list[self.loop_id%2],self.loop_id,tmp/60,tmp%60), background=bg_colors[self.clock%2])
@@ -195,27 +280,25 @@ class window_main(Tk):
     dict_checkbox_var  = {}
     dict_btn_remove  = {}
     remove_enabled = False
+    color_list = ['#2E2EFE', '#F45F04']
 
     def __init__(self):
         Tk.__init__(self)
         self.load_cfg_file()
         self.title('ToolKit')
         self.wm_iconbitmap( '@icon.xbm')
-        self.configure(background='#eef')
         self.resizable(width=False, height=False)
         width=10
-        font=("", 10, 'bold')
+        font=("", 10,)
         btn_bg = '#ffe'
         btn_fg = '#00f'
 
         frame_title = Frame(self, )
         frame_title.grid(row=0)
-        self.button_add =  Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD",
-            command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
-        self.button_remove_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="REMOVE",
-            command=self.show_btn_remove)
-        self.button_help = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP",
-            command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
+        self.button_add =  Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD", command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
+        self.button_remove_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="REMOVE", command=self.show_btn_remove)
+        self.button_help = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP", command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
+        self.button_cpu = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="CPU", command=self.btn_cmd_cpu)
 
         self.var_entry_timer = IntVar()
         self.var_entry_timer.set(2400)
@@ -227,13 +310,14 @@ class window_main(Tk):
         self.button_add.grid   (row=row_id, column=0,)
         self.button_remove_item.grid      (row=row_id, column=1)
         self.button_help.grid      (row=row_id, column=2,)
-        self.button_countdown.grid      (row=row_id, column=3,)
-        entry_timer.grid      (row=row_id, column=4,)
+        self.button_cpu.grid      (row=row_id, column=3,)
+        self.button_countdown.grid      (row=row_id, column=4,)
+        entry_timer.grid      (row=row_id, column=5,)
 
         frame_table = Frame(self, )
         #frame_scrollbar = Scrollbar(frame_table, orient=VERTICAL)
         #frame_scrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-        self.frame_list = Frame(frame_table, bg="#fa3")
+        self.frame_list = Frame(frame_table, )
         self.frame_list.pack(fill=BOTH)
         frame_table.grid(row=1)
         self.update_list_frame_view()
@@ -257,10 +341,21 @@ class window_main(Tk):
     Right-Click on timer: exit timer.'''
         self.button_help.bind("<Enter>", lambda event:self.show_tips(help_info,self.button_help))
         self.button_help.bind("<Leave>", lambda event:self.frame_tips.withdraw())
+        self.button_cpu.bind('<Button-3>', lambda event:os.startfile(r'.\stock.json'))
+
+    def btn_cmd_cpu(self,):
+        try:
+            if Toplevel.winfo_exists(self.bull.root):
+                self.bull.root.destroy()
+                return
+        except:
+            pass
+        self.bull = show_stock_info()
 
     def cmd_btn_countdown(self,):
         try:
             if Toplevel.winfo_exists(self.countdown.root):
+                self.countdown.set_label_window()
                 return
         except:
             pass
@@ -289,12 +384,12 @@ class window_main(Tk):
                 pass
         if not main_folder:
             main_folder = '%userprofile%'
-
+        main_folder = (main_folder.replace("/", "\\")).strip()
         self.json_data[item_alias] = {}
-        self.json_data[item_alias]['main'] = re.sub(r'(\s+)', r'"\1"',main_file)
+        self.json_data[item_alias]['list'] = []
+        self.json_data[item_alias]['main'] = os.path.basename(main_file)  #(re.sub(r'(\s+)', r'"\1"',main_file)).strip()
         self.json_data[item_alias]['folder'] = main_folder
-        self.json_data[item_alias]['interpreter'] = interpreter
-        self.json_data[item_alias]['list'] = ["",]
+        self.json_data[item_alias]['interpreter'] = interpreter.strip()
         logging.debug('alias [%s] main_file [%s] main_folder [%s]' %(item_alias, main_file, main_folder))
 
     def load_default_cfg(self):
@@ -302,7 +397,7 @@ class window_main(Tk):
         self.json_data['explorer']['list'] = ['https://github.com/qin-neo/pyToolkit',]
 
     def load_cfg_file(self):
-        for iii in range(30):
+        for iii in range(900):
             file_name = (datetime.now() - timedelta(days=iii)).strftime('cfg_%Y%m%d.json')
             if os.path.isfile(file_name):
                 try:
@@ -336,15 +431,15 @@ class window_main(Tk):
     def cmd_button_run_script(self, item_alias):
         item_dict = self.json_data[item_alias]
         is_debug = self.dict_checkbox_var[item_alias].get()
-        # on win32, CMD "start" will keep new process async with GUI.
-        cmd_str = 'start "%s" /D "%s"' %(item_alias, item_dict['folder'])
+        self.json_data[item_alias]['debug'] = is_debug
 
         if is_debug or item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe'):
-            cmd_str = '%s cmd /K' %cmd_str
+            cmd_str = 'start "%s" /D "%s" cmd /K ' %(item_alias, item_dict['folder'])
         else:
-            cmd_str = '%s /B' %cmd_str
+            #cmd_str = 'set path=%%path%%;"%s" & start "%s" /B ' %(item_dict['folder'], item_alias)
+            cmd_str = 'start "%s" /D "%s" /B ' %(item_alias, item_dict['folder'])
 
-        cmd_str = '%s %s %s' %(cmd_str, item_dict['interpreter'], item_dict['main'])
+        cmd_str = '%s %s %s' %(cmd_str, item_dict['interpreter'], os.path.basename(item_dict['main']))
 
         arg_content = self.dict_str_var[item_alias].get()
         try:
@@ -357,7 +452,7 @@ class window_main(Tk):
         self.dict_cbbox[item_alias]['values'] = item_dict['list']
 
         cmd_str = '%s %s' %(cmd_str,arg_content)
-        logging.info(cmd_str)
+        logging.info('\n'+cmd_str)
 
         if (item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe')) and (not is_debug):
             os.system('%s ^&^& exit' %cmd_str)
@@ -414,29 +509,37 @@ class window_main(Tk):
 
         item_alias_list = sorted(self.json_data.keys())
 
-        bg_color = ['#efe', '#ffa']
-        foreground = '#000'
-        for iii in range(len(bg_color)):
-            s = ttk.Style()
-            color_code = bg_color[iii]
-            style_name = '%s.TCombobox' %(color_code[1:])
-            s.configure(style_name, foreground=foreground)
-            s.configure(style_name, fieldbackground=color_code)
+        font = ("consolas", 12, )
+        cbbox_font = ("Courier New", 11,)
+        cbbox_width = 120
 
-        cbbox_width = 100
+        self.frame_list.option_add('*TCombobox*Listbox.font', cbbox_font)
+        # *TCombobox*Listbox.selectBackground
+
+        for color_code in self.color_list:
+            style_name = f'{color_code}.TCombobox'
+            s = ttk.Style()
+            s.configure(style_name, foreground=color_code,)
 
         for iii in  range(len(item_alias_list)):
             item_alias = item_alias_list[iii]
-            color_code = bg_color[iii%2]
-            style_name = '%s.TCombobox' %(color_code[1:])
-            font=("consolas",8, 'bold')
-            button = Button(self.frame_list, text='  %s' %item_alias, width=15, font=font, bg=color_code, fg=foreground, anchor=W,
+            color_code = self.color_list[iii%2]
+            style_name = f'{color_code}.TCombobox'
+
+            button = Button(self.frame_list, text='  %s' %item_alias, width=15, font=font, fg=color_code, anchor=W,
                 command=lambda item_alias=item_alias:self.cmd_button_run_script(item_alias))
             button.grid     (row=iii, column=0,)
             button.bind('<Button-3>', lambda event, item_alias=item_alias:os.startfile(self.json_data[item_alias]['folder']))
 
             self.dict_checkbox_var[item_alias] = IntVar()
-            checkbutton = Checkbutton(self.frame_list, text="D", variable=self.dict_checkbox_var[item_alias], bg=color_code,)
+            try:
+                if self.json_data[item_alias]['debug']:
+                    self.dict_checkbox_var[item_alias].set(1)
+                else:
+                    self.dict_checkbox_var[item_alias].set(0)
+            except:
+                self.dict_checkbox_var[item_alias].set(0)
+            checkbutton = Checkbutton(self.frame_list, text="D", variable=self.dict_checkbox_var[item_alias], fg=color_code,)
             checkbutton.grid (row=iii, column=1)
 
             try:
@@ -451,15 +554,16 @@ class window_main(Tk):
 
             self.dict_str_var[item_alias] = StringVar()
             text_cbbox = Combobox(self.frame_list, textvariable=self.dict_str_var[item_alias],
-                font=("Arial",8), width=cbbox_width, height=20, style=style_name)
+                width=cbbox_width, style=style_name, font=cbbox_font,)
 
             self.dict_cbbox[item_alias] = text_cbbox
 
             if self.json_data[item_alias]:
                 text_cbbox['values'] = self.json_data[item_alias]['list']
-                text_cbbox.current(0)
+                if text_cbbox['values']:
+                    text_cbbox.current(0)
 
-            text_cbbox.grid(row=iii, column=2)
+            text_cbbox.grid(row=iii, column=2, sticky=NS)
             text_cbbox.bind('<Button-2>',
                 lambda event, item_alias=item_alias: self.botton2_on_dict_cbbox(item_alias))
             text_cbbox.bind('<Button-3>',
@@ -469,22 +573,24 @@ class window_main(Tk):
 
             text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
-            btn_remove = Button(self.frame_list, bg=color_code, fg=foreground, state=DISABLED, text="", font=font,
+            btn_remove = Button(self.frame_list, fg=color_code, state=DISABLED, text="", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
             self.dict_btn_remove[item_alias] = btn_remove
             btn_remove.grid(row=iii, column=97)
 
-            btn_file = Button(self.frame_list, bg=color_code, fg=foreground, text="F", font=font,
+            btn_file = Button(self.frame_list, fg=color_code, text="F", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_file(item_alias))
             btn_file.grid(row=iii, column=98)
 
-            btn_dir = Button(self.frame_list, bg=color_code, fg=foreground, text="D", font=font,
+            btn_dir = Button(self.frame_list, fg=color_code, text="D", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_folder(item_alias))
             btn_dir.grid(row=iii, column=99)
         self.update()
+        self.focus_force()
         self.geometry("+0+%d" %(self.winfo_screenheight()-self.winfo_height()-66))
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG, datefmt='%m%d %H:%M:%S', format='%(asctime)s %(levelname)s %(filename)s:%(lineno)d %(funcName)s: %(message)s')
+    logging.info('========== START NOW ===========')
     handle_main = window_main()
     handle_main.mainloop()
