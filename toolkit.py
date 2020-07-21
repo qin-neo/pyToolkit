@@ -46,14 +46,14 @@ class show_stock_info():
         self.root.overrideredirect(True)
         self.root.resizable(width=False, height=False)
 
-        self.label_info = Label(self.root, font = ('consolas',7),fg='#000',bg='white')
+        self.label_info = Label(self.root, font = ('consolas',self.config["fontsize"]),fg='#000',bg='white',text=self.stock_info)
         self.label_info.grid()
-        self.root.attributes('-alpha', 0.2)
+        self.root.attributes('-alpha', self.config['transparent'])
         self.root.wm_attributes("-transparentcolor", "white")
-        self.label_info.bind('<Button-1>', lambda event:os.startfile('file:///D:/dev/pyToolKit/qq/index.html'))
+        self.label_info.bind('<Button-1>', lambda event:os.startfile(os.path.join(os.path.dirname(__file__),self.config['stock_page'])))
         self.label_info.bind('<Button-3>', lambda event:self.root.destroy())
-        self.label_info.bind("<Enter>", lambda event:self.root.attributes('-alpha', 0.5))
-        self.label_info.bind("<Leave>", lambda event:self.root.attributes('-alpha', 0.1))
+        self.label_info.bind("<Enter>", lambda event:self.root.attributes('-alpha', self.config['transparent']+0.5))
+        self.label_info.bind("<Leave>", lambda event:self.root.attributes('-alpha', self.config['transparent']))
 
         try:
             self.show_stock()
@@ -67,22 +67,28 @@ class show_stock_info():
             os.startfile(self.stock_json)
 
     def read_stock_json(self):
-        config = {
+        self.config = {
             "proxy": "",    # http://127.0.0.1:1234
-            "stocks": ""    # sh601166,sh601818,sz002419,sh600016
+            "stocks": "",    # sh601166,sh601818,sz002419,sh600016
+            "refresh": 3000,
+            "transparent":  0.2,
+            "fontsize": 10,
+            "stock_page": "qq/index.html",
+            "open_hour": 9,
+            "close_hour": 15,
         }
 
         if not os.path.isfile(self.stock_json):
             with open(self.stock_json, 'w') as fd:
-                json.dump(config, fd)
+                json.dump(self.config, fd, indent=4)
 
         with open(self.stock_json) as json_file:
-            config = json.load(json_file)
-        self.stock_list = re.findall(r'(\w+)', config["stocks"])
-        if config["proxy"]:
+            self.config = json.load(json_file)
+        self.stock_list = re.findall(r'(\w+)', self.config["stocks"])
+        if self.config["proxy"]:
             self.proxyDict = {
-                "http"  : config["proxy"],
-                "https" : config["proxy"],
+                "http"  : self.config["proxy"],
+                "https" : self.config["proxy"],
             }
         else:
             self.proxyDict = None
@@ -90,10 +96,11 @@ class show_stock_info():
     def show_stock(self):
         ts = datetime.now()
         try:
-            if self.stock_list and ts.weekday()<5 and ts.hour>8 and ts.hour<16:
+            if self.stock_list and ts.weekday()<5 and ts.hour> self.config['open_hour'] and ts.hour<self.config['close_hour']:
                 self.stock_info = get_163_stock_info(self.stock_list, self.proxyDict)
         except:
-            self.stock_info = 'BAD\n%s' %(self.stock_info)
+            if self.stock_info.count('BAD') < 3:
+                self.stock_info = 'BAD\n%s' %(self.stock_info)
 
         ts = time.time()
         net = psutil.net_io_counters()
@@ -106,7 +113,7 @@ class show_stock_info():
         self.prev_recv = bytes_recv
         self.prev_sent = bytes_sent
         self.ts = ts
-        self.root.after(3000, self.show_stock)
+        self.root.after(self.config['refresh'], self.show_stock)
 
 class countdown_timer():
     pid = None
