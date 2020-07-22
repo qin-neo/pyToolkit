@@ -96,8 +96,10 @@ class show_stock_info():
     def show_stock(self):
         ts = datetime.now()
         try:
-            if self.stock_list and ts.weekday()<5 and ts.hour> self.config['open_hour'] and ts.hour<self.config['close_hour']:
+            if self.stock_list and ts.weekday()<5 and ts.hour>=self.config['open_hour'] and ts.hour<self.config['close_hour']:
                 self.stock_info = get_163_stock_info(self.stock_list, self.proxyDict)
+            else:
+                self.stock_info = ''
         except:
             if self.stock_info.count('BAD') < 3:
                 self.stock_info = 'BAD\n%s' %(self.stock_info)
