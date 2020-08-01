@@ -98,8 +98,6 @@ class show_stock_info():
         try:
             if self.stock_list and ts.weekday()<5 and ts.hour>=self.config['open_hour'] and ts.hour<self.config['close_hour']:
                 self.stock_info = get_163_stock_info(self.stock_list, self.proxyDict)
-            else:
-                self.stock_info = ''
         except:
             if self.stock_info.count('BAD') < 3:
                 self.stock_info = 'BAD\n%s' %(self.stock_info)
@@ -290,6 +288,7 @@ class window_main(Tk):
     dict_btn_remove  = {}
     remove_enabled = False
     color_list = ['#2E2EFE', '#F45F04']
+    fontzie = 9
 
     def __init__(self):
         Tk.__init__(self)
@@ -298,7 +297,7 @@ class window_main(Tk):
         self.wm_iconbitmap( '@icon.xbm')
         self.resizable(width=False, height=False)
         width=10
-        font=("", 10,)
+        font=("", self.fontzie,)
         btn_bg = '#ffe'
         btn_fg = '#00f'
 
@@ -402,8 +401,8 @@ class window_main(Tk):
         logging.debug('alias [%s] main_file [%s] main_folder [%s]' %(item_alias, main_file, main_folder))
 
     def load_default_cfg(self):
-        self.init_item_context('explorer', 'explorer', '', '')
-        self.json_data['explorer']['list'] = ['https://github.com/qin-neo/pyToolkit',]
+        self.init_item_context('start', ' ', '', '')
+        self.json_data['start']['list'] = ['https://github.com/qin-neo/pyToolkit',]
 
     def load_cfg_file(self):
         for iii in range(900):
@@ -446,6 +445,7 @@ class window_main(Tk):
             cmd_str = 'start "%s" /D "%s" cmd /K ' %(item_alias, item_dict['folder'])
         else:
             #cmd_str = 'set path=%%path%%;"%s" & start "%s" /B ' %(item_dict['folder'], item_alias)
+            logging.critical('~~~~~~~~~~~~~~~~')
             cmd_str = 'start "%s" /D "%s" /B ' %(item_alias, item_dict['folder'])
 
         cmd_str = '%s %s %s' %(cmd_str, item_dict['interpreter'], os.path.basename(item_dict['main']))
@@ -518,9 +518,9 @@ class window_main(Tk):
 
         item_alias_list = sorted(self.json_data.keys())
 
-        font = ("consolas", 12, )
-        cbbox_font = ("Courier New", 11,)
-        cbbox_width = 120
+        font = ("Microsoft YaHei UI", self.fontzie, )
+        cbbox_font = ("Courier New", self.fontzie,)
+        cbbox_width = 100
 
         self.frame_list.option_add('*TCombobox*Listbox.font', cbbox_font)
         # *TCombobox*Listbox.selectBackground
