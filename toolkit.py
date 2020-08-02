@@ -362,14 +362,16 @@ class window_main(Tk):
         btn_close.grid(row=0, column=0)
         btn_clean = Button(frame_btn, font=self.font, text="CLEAN", command=self.frame_batch_clean)
         btn_clean.grid(row=0, column=1)
+        btn_run = Button(frame_btn, font=self.font, text="PARALLEL", command=self.frame_parallel_run)
+        btn_run.grid(row=0, column=3)
         btn_run = Button(frame_btn, font=self.font, text="RUN", command=self.frame_batch_run)
-        btn_run.grid(row=0, column=2)
+        btn_run.grid(row=0, column=4)
         self.frame_batch.grid_remove()
         self.batch_lables = None
 
     def frame_batch_close(self):
-        self.frame_batch_clean()
         self.frame_batch.grid_remove()
+        self.frame_batch_clean()
 
     def frame_batch_clean(self):
         self.batch_lables.destroy()
@@ -392,6 +394,16 @@ class window_main(Tk):
             item_alias, arg_content = label.cget("text").split(':',1)
             item_dict = self.json_data[item_alias]
             cmd_str = '%s CD /D "%s" & %s %s %s &' %(cmd_str, item_dict['folder'], item_dict['interpreter'], item_dict['main'], arg_content)
+
+        logging.info(cmd_str)
+        os.system(cmd_str)
+
+    def frame_parallel_run(self):
+        cmd_str = ''
+        for label in self.batch_lables.winfo_children():
+            item_alias, arg_content = label.cget("text").split(':',1)
+            item_dict = self.json_data[item_alias]
+            cmd_str = '%s start /D "%s" %s %s %s &' %(cmd_str, item_dict['folder'], item_dict['interpreter'], item_dict['main'], arg_content)
 
         logging.info(cmd_str)
         os.system(cmd_str)
