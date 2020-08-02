@@ -285,8 +285,8 @@ class window_main(Tk):
     dict_button  = {}
     dict_cbbox  = {}
     dict_checkbox_var  = {}
-    dict_btn_remove  = {}
-    remove_enabled = False
+    dict_btn_del  = {}
+    del_enabled = False
     color_list = ['#2E2EFE', '#F45F04']
     fontzie = 9
 
@@ -304,7 +304,7 @@ class window_main(Tk):
         frame_title = Frame(self, )
         frame_title.grid(row=0)
         self.button_add =  Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD", command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
-        self.button_remove_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="REMOVE", command=self.show_btn_remove)
+        self.button_del_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="DEL", command=self.show_btn_del)
         self.button_help = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP", command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
         self.button_cpu = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="CPU", command=self.btn_cmd_cpu)
 
@@ -316,7 +316,7 @@ class window_main(Tk):
 
         row_id = 0
         self.button_add.grid   (row=row_id, column=0,)
-        self.button_remove_item.grid      (row=row_id, column=1)
+        self.button_del_item.grid      (row=row_id, column=1)
         self.button_help.grid      (row=row_id, column=2,)
         self.button_cpu.grid      (row=row_id, column=3,)
         self.button_countdown.grid      (row=row_id, column=4,)
@@ -343,7 +343,7 @@ class window_main(Tk):
   Right-Click in text-entry: clean text-entry, and trigger dropdown.
   Mid-Click in text-entry: remove chosen line from history.
   Double-Click in text-entry: select all and copy.
-  REMOVE button: enable "-" button to remove shortcut.
+  DEL button: enable "-" button to delete shortcut.
   CountDown button: start a timer on upper right corner of screen.
     Left-Click on timer: reset timer.
     Right-Click on timer: exit timer.'''
@@ -374,15 +374,15 @@ class window_main(Tk):
         self.frame_tips.deiconify()
         self.label_tips.config(text=info_text)
 
-    def show_btn_remove(self):
-        if self.remove_enabled:
-            self.remove_enabled = False
+    def show_btn_del(self):
+        if self.del_enabled:
+            self.del_enabled = False
             for item_alias in self.json_data.keys():
-                self.dict_btn_remove[item_alias].config(state=DISABLED,text="",width=0)
+                self.dict_btn_del[item_alias].grid_remove()
         else:
-            self.remove_enabled = True
+            self.del_enabled = True
             for item_alias in self.json_data.keys():
-                self.dict_btn_remove[item_alias].config(state=NORMAL,text="-",width=2)
+                self.dict_btn_del[item_alias].grid()
 
     def init_item_context(self,item_alias, main_file, main_folder, interpreter):
         if not main_folder:
@@ -401,7 +401,7 @@ class window_main(Tk):
         logging.debug('alias [%s] main_file [%s] main_folder [%s]' %(item_alias, main_file, main_folder))
 
     def load_default_cfg(self):
-        self.init_item_context('start', ' ', '', '')
+        self.init_item_context(' RUN', ' ', '', '')
         self.json_data['start']['list'] = ['https://github.com/qin-neo/pyToolkit',]
 
     def load_cfg_file(self):
@@ -456,7 +456,7 @@ class window_main(Tk):
         except:
             pass
         item_dict['list'].insert(0, arg_content)
-        while len(item_dict['list']) >= 21:
+        while len(item_dict['list']) >= 30:
             item_dict['list'].pop(-1)
         self.dict_cbbox[item_alias]['values'] = item_dict['list']
 
@@ -582,10 +582,11 @@ class window_main(Tk):
 
             text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
-            btn_remove = Button(self.frame_list, fg=color_code, state=DISABLED, text="", font=font,
+            btn_remove = Button(self.frame_list, fg=color_code, state=DISABLED, text="-", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
-            self.dict_btn_remove[item_alias] = btn_remove
+            self.dict_btn_del[item_alias] = btn_remove
             btn_remove.grid(row=iii, column=97)
+            btn_remove.grid_remove()
 
             btn_file = Button(self.frame_list, fg=color_code, text="F", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_file(item_alias))
