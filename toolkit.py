@@ -582,7 +582,7 @@ class window_main(Tk):
 
             text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
-            btn_remove = Button(self.frame_list, fg=color_code, state=DISABLED, text="-", font=font,
+            btn_remove = Button(self.frame_list, fg=color_code, text="-", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
             self.dict_btn_del[item_alias] = btn_remove
             btn_remove.grid(row=iii, column=97)
