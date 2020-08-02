@@ -286,9 +286,12 @@ class window_main(Tk):
     dict_cbbox  = {}
     dict_checkbox_var  = {}
     dict_btn_del  = {}
+    frame_batch = None
+    dict_batch = {}
     del_enabled = False
     color_list = ['#2E2EFE', '#F45F04']
     fontzie = 9
+    font=('Courier New', fontzie)
 
     def __init__(self):
         Tk.__init__(self)
@@ -297,21 +300,23 @@ class window_main(Tk):
         self.wm_iconbitmap( '@icon.xbm')
         self.resizable(width=False, height=False)
         width=10
-        font=("", self.fontzie,)
         btn_bg = '#ffe'
         btn_fg = '#00f'
 
-        frame_title = Frame(self, )
-        frame_title.grid(row=0)
-        self.button_add =  Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="ADD", command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
-        self.button_del_item = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="DEL", command=self.show_btn_del)
-        self.button_help = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="HELP", command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
-        self.button_cpu = Button(frame_title, font=font, width=width, bg=btn_bg, fg=btn_fg, text="CPU", command=self.btn_cmd_cpu)
+        frame_title = Frame(self)
+        frame_title.grid(row=0, column=0)
+        frame_table = Frame(self)
+        frame_table.grid(row=1, column=0)
+        self.frame_batch_init()
+
+        self.button_add =  Button(frame_title,font=self.font, width=width, bg=btn_bg, fg=btn_fg, text="ADD", command=lambda:popup_option_menu('ADD',self.callback_add_command,).grab_set())
+        self.button_del_item = Button(frame_title, font=self.font, width=width, bg=btn_bg, fg=btn_fg, text="DEL", command=self.show_btn_del)
+        self.button_help = Button(frame_title,font=self.font, width=width, bg=btn_bg, fg=btn_fg, text="HELP", command=lambda :os.startfile("https://github.com/qin-neo/pyToolkit") )
+        self.button_cpu = Button(frame_title, font=self.font, width=width, bg=btn_bg, fg=btn_fg, text="CPU", command=self.btn_cmd_cpu)
 
         self.var_entry_timer = IntVar()
         self.var_entry_timer.set(2400)
-        self.button_countdown = Button(frame_title,font=font, width=width, bg=btn_bg, fg=btn_fg, text="CountDown",
-            command=self.cmd_btn_countdown)
+        self.button_countdown = Button(frame_title,font=self.font, width=width, bg=btn_bg, fg=btn_fg, text="CountDown", command=self.cmd_btn_countdown)
         entry_timer = Entry(frame_title, textvariable=self.var_entry_timer, width=width)
 
         row_id = 0
@@ -322,12 +327,8 @@ class window_main(Tk):
         self.button_countdown.grid      (row=row_id, column=4,)
         entry_timer.grid      (row=row_id, column=5,)
 
-        frame_table = Frame(self, )
-        #frame_scrollbar = Scrollbar(frame_table, orient=VERTICAL)
-        #frame_scrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
         self.frame_list = Frame(frame_table, )
         self.frame_list.pack(fill=BOTH)
-        frame_table.grid(row=1)
         self.update_list_frame_view()
 
         self.frame_tips = Toplevel(self,bd=1,bg="black")
@@ -350,6 +351,50 @@ class window_main(Tk):
         self.button_help.bind("<Enter>", lambda event:self.show_tips(help_info,self.button_help))
         self.button_help.bind("<Leave>", lambda event:self.frame_tips.withdraw())
         self.button_cpu.bind('<Button-3>', lambda event:os.startfile(r'.\stock.json'))
+
+    def frame_batch_init(self):
+        self.frame_batch = Frame(self, bd=1,background='blue',)
+        self.frame_batch.grid(row=1, column=1, sticky="ns")
+        frame_btn = Frame(self.frame_batch)
+        #frame_btn.grid(row=0,sticky='W')
+        frame_btn.pack(side='top', anchor='w')
+        btn_close = Button(frame_btn, font=self.font, text="CLOSE", command=self.frame_batch_close)
+        btn_close.grid(row=0, column=0)
+        btn_clean = Button(frame_btn, font=self.font, text="CLEAN", command=self.frame_batch_clean)
+        btn_clean.grid(row=0, column=1)
+        btn_run = Button(frame_btn, font=self.font, text="RUN", command=self.frame_batch_run)
+        btn_run.grid(row=0, column=2)
+        self.frame_batch.grid_remove()
+        self.batch_lables = None
+
+    def frame_batch_close(self):
+        self.frame_batch_clean()
+        self.frame_batch.grid_remove()
+
+    def frame_batch_clean(self):
+        self.batch_lables.destroy()
+        self.batch_lables = None
+
+    def frame_batch_create(self, item_alias):
+        self.frame_batch.grid()
+        if not self.batch_lables:
+            self.batch_lables = Frame(self.frame_batch, bd=1,background='blue',)
+            self.batch_lables.pack()
+
+        arg_content = self.dict_str_var[item_alias].get()
+        label = Label(self.batch_lables, font=self.font, anchor="w", text='%s: %s' %(item_alias,arg_content))
+        label.grid(sticky='w')
+        label.bind('<Button-3>',lambda event,item_alias=item_alias: label.destroy())
+
+    def frame_batch_run(self):
+        cmd_str = ''
+        for label in self.batch_lables.winfo_children():
+            item_alias, arg_content = label.cget("text").split(':',1)
+            item_dict = self.json_data[item_alias]
+            cmd_str = '%s CD /D "%s" & %s %s %s &' %(cmd_str, item_dict['folder'], item_dict['interpreter'], item_dict['main'], arg_content)
+
+        logging.info(cmd_str)
+        os.system(cmd_str)
 
     def btn_cmd_cpu(self,):
         try:
@@ -441,7 +486,7 @@ class window_main(Tk):
         is_debug = self.dict_checkbox_var[item_alias].get()
         self.json_data[item_alias]['debug'] = is_debug
 
-        if is_debug or item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe'):
+        if is_debug or item_dict['interpreter'].endswith('python') or item_dict['interpreter'].endswith('pypy'):
             cmd_str = 'start "%s" /D "%s" cmd /K ' %(item_alias, item_dict['folder'])
         else:
             #cmd_str = 'set path=%%path%%;"%s" & start "%s" /B ' %(item_dict['folder'], item_alias)
@@ -580,13 +625,14 @@ class window_main(Tk):
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
 
-            text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
+            #text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
+            text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.frame_batch_create(item_alias))
 
-            btn_remove = Button(self.frame_list, fg=color_code, text="-", font=font,
+            btn_del = Button(self.frame_list, fg=color_code, text="-", font=font,
                 command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
-            self.dict_btn_del[item_alias] = btn_remove
-            btn_remove.grid(row=iii, column=97)
-            btn_remove.grid_remove()
+            self.dict_btn_del[item_alias] = btn_del
+            btn_del.grid(row=iii, column=97)
+            btn_del.grid_remove()
 
             btn_file = Button(self.frame_list, fg=color_code, text="F", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_file(item_alias))
