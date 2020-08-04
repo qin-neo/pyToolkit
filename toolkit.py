@@ -339,11 +339,12 @@ class window_main(Tk):
         self.label_tips.pack()
         help_info = '''  Windows ToolKit, shortcuts with parameters.
     Author: qinhuawei@outlook.com 2018-07-15.
+  Double-Click 
+         Enter in text-entry: execute shortcut.
   Left-Click on Alias button: execute shortcut.
   Right-Click on Alias button: open main folder.
   Right-Click in text-entry: clean text-entry, and trigger dropdown.
   Mid-Click in text-entry: remove chosen line from history.
-  Double-Click in text-entry: select all and copy.
   DEL button: enable "-" button to delete shortcut.
   CountDown button: start a timer on upper right corner of screen.
     Left-Click on timer: reset timer.
@@ -429,7 +430,7 @@ class window_main(Tk):
     def show_tips(self, info_text, anchor):
         self.frame_tips.geometry('+%d+%d' %(anchor.winfo_rootx(),(anchor.winfo_rooty()+20)))
         self.frame_tips.deiconify()
-        self.label_tips.config(text=info_text)
+        self.label_tips.config(text=info_text, font=self.font)
 
     def show_btn_del(self):
         if self.del_enabled:
@@ -459,7 +460,7 @@ class window_main(Tk):
 
     def load_default_cfg(self):
         self.init_item_context(' RUN', ' ', '', '')
-        self.json_data['start']['list'] = ['https://github.com/qin-neo/pyToolkit',]
+        self.json_data[' RUN']['list'] = ['https://github.com/qin-neo/pyToolkit',]
 
     def load_cfg_file(self):
         for iii in range(900):
@@ -636,23 +637,27 @@ class window_main(Tk):
                 lambda event,item_alias=item_alias: self.botton3_on_dict_cbbox(item_alias))
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
+            text_cbbox.bind('<Double-Button-1>',
+                lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
 
-            #text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
-            text_cbbox.bind('<Double-Button-1>', lambda event,item_alias=item_alias: self.frame_batch_create(item_alias))
+            text_cbbox.bind('<Control-a>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
-            btn_del = Button(self.frame_list, fg=color_code, text="-", font=font,
-                command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
+            btn_del = Button(self.frame_list, fg=color_code, text="-", font=font, command=lambda item_alias=item_alias:self.remove_by_item_alias(item_alias))
             self.dict_btn_del[item_alias] = btn_del
-            btn_del.grid(row=iii, column=97)
+            btn_del.grid(row=iii, column=3)
             btn_del.grid_remove()
+
+            btn_file = Button(self.frame_list, fg=color_code, text="B", font=font,
+                command=lambda item_alias=item_alias:self.frame_batch_create(item_alias))
+            btn_file.grid(row=iii, column=4)
 
             btn_file = Button(self.frame_list, fg=color_code, text="F", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_file(item_alias))
-            btn_file.grid(row=iii, column=98)
+            btn_file.grid(row=iii, column=5)
 
             btn_dir = Button(self.frame_list, fg=color_code, text="D", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_folder(item_alias))
-            btn_dir.grid(row=iii, column=99)
+            btn_dir.grid(row=iii, column=6)
         self.update()
         self.focus_force()
         self.geometry("+0+%d" %(self.winfo_screenheight()-self.winfo_height()-66))
