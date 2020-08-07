@@ -638,7 +638,7 @@ class window_main(Tk):
             text_cbbox.bind('<Return>',
                 lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
             text_cbbox.bind('<Double-Button-1>',
-                lambda event,item_alias=item_alias: self.cmd_button_run_script(item_alias))
+                lambda event,item_alias=item_alias: self.frame_batch_create(item_alias))
 
             text_cbbox.bind('<Control-a>', lambda event,item_alias=item_alias: self.select_all_and_copy(item_alias,event))
 
@@ -647,9 +647,9 @@ class window_main(Tk):
             btn_del.grid(row=iii, column=3)
             btn_del.grid_remove()
 
-            btn_file = Button(self.frame_list, fg=color_code, text="B", font=font,
-                command=lambda item_alias=item_alias:self.frame_batch_create(item_alias))
-            btn_file.grid(row=iii, column=4)
+            #btn_file = Button(self.frame_list, fg=color_code, text="B", font=font,
+            #    command=lambda item_alias=item_alias:self.frame_batch_create(item_alias))
+            #btn_file.grid(row=iii, column=4)
 
             btn_file = Button(self.frame_list, fg=color_code, text="F", font=font,
                 command=lambda item_alias=item_alias:self.cmd_button_select_file(item_alias))
