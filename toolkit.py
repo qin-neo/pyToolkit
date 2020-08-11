@@ -520,11 +520,7 @@ class window_main(Tk):
 
         cmd_str = '%s %s' %(cmd_str,arg_content)
         logging.info('\n'+cmd_str)
-
-        if (item_dict['interpreter'].endswith('python.exe') or item_dict['interpreter'].endswith('pypy.exe')) and (not is_debug):
-            os.system('%s ^&^& exit' %cmd_str)
-        else:
-            os.system(cmd_str)
+        os.system(cmd_str)
         self.save_cfg_file()
 
     def cmd_button_select_file(self,item_alias):
