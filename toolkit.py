@@ -292,6 +292,7 @@ class window_main(Tk):
     color_list = ['#2E2EFE', '#F45F04']
     fontzie = 9
     font=('Courier New', fontzie)
+    max_history = 50
 
     def __init__(self):
         Tk.__init__(self)
@@ -514,7 +515,7 @@ class window_main(Tk):
         except:
             pass
         item_dict['list'].insert(0, arg_content)
-        while len(item_dict['list']) >= 30:
+        while len(item_dict['list']) >= self.max_history:
             item_dict['list'].pop(-1)
         self.dict_cbbox[item_alias]['values'] = item_dict['list']
 
@@ -617,7 +618,7 @@ class window_main(Tk):
 
             self.dict_str_var[item_alias] = StringVar()
             text_cbbox = Combobox(self.frame_list, textvariable=self.dict_str_var[item_alias],
-                width=cbbox_width, style=style_name, font=cbbox_font,)
+                width=cbbox_width, style=style_name, font=cbbox_font, height=self.max_history)
 
             self.dict_cbbox[item_alias] = text_cbbox
 
