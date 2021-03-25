@@ -469,7 +469,7 @@ class window_main(Tk):
             if os.path.isfile(file_name):
                 try:
                     data_file = open(file_name, 'rb')
-                    self.json_data = json.load(data_file, encoding="utf-8")
+                    self.json_data = json.load(data_file)
                     data_file.close()
                     return
                 except:
