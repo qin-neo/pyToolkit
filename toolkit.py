@@ -28,7 +28,7 @@ def get_163_stock_info(stock_list, proxyDict):
     stocks_json = json.loads(stocks_info)
     stock_str = ''
     for stock_id, stock_dict in stocks_json.items():
-        stock_str = '%s%8.2f%6.2f%5s\n' %(stock_str, stock_dict['price'], 100.0*stock_dict['percent'], stock_dict['name'],)
+        stock_str = '%s%.3f%6.2f %s\n' %(stock_str, stock_dict['price'], 100.0*stock_dict['percent'], stock_dict['name'],)
     return stock_str
 
 class show_stock_info():
